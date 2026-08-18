@@ -52,10 +52,6 @@ export CODE_ROOT="$PWD"
 export LIBERO_ROOT="$WORKSPACE_ROOT/LIBERO"
 export LIBERO_CONFIG_PATH="$WORKSPACE_ROOT/.libero"
 export PYTHONPATH="$CODE_ROOT:$LIBERO_ROOT:${PYTHONPATH:-}"
-export MUJOCO_GL=osmesa
-export PYOPENGL_PLATFORM=osmesa
-export TOKENIZERS_PARALLELISM=false
-export CLIP_MODEL_PATH="$WORKSPACE_ROOT/clip-vit-base-patch32-safetensors"
 
 # Set CUDA_VISIBLE_DEVICES for the GPUs allocated by your scheduler or host.
 ```
@@ -100,7 +96,8 @@ export WEIGHTS_ROOT=/path/to/romanflow_weights
 
 ## LIBERO-Long
 
-LIBERO-Long uses the `libero_10` HDF5 files. Set the data and model paths:
+LIBERO-Long uses the default `libero_10` environment. Set the data and model
+paths:
 
 ```bash
 export LIBERO_DATA_ROOT=/path/to/libero_data
@@ -136,7 +133,6 @@ export EXP_ROOT="$CODE_ROOT/exp"
 export RUN_GROUP=romanflow_libero10_il
 
 COMMON=(
-  --env_name=libero_10
   --dataset_dir="$LIBERO10_HDF5"
   --libero_buffer_path="$LIBERO10_BUFFER"
   --seed=1
@@ -154,11 +150,9 @@ COMMON=(
   --agent.share_critic_value_state=True
   --agent.alpha_actor=1.0
   --global_batch_size=64
-  --batch_prefetch=True
   --ddp=True
   --ddp_static_graph=False
   --ddp_find_unused_parameters=True
-  --log_interval=100
   --eval_interval=0
 )
 
@@ -166,7 +160,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" \
   --run_group="$RUN_GROUP" \
   --agent.train_mode=il \
-  --agent.lr=5e-5 --agent.actor_lr=5e-5 \
+  --agent.lr=5e-5 \
   --offline_steps=20000 --save_interval=20000
 ```
 
@@ -200,8 +194,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" \
   --run_group="$ONE_STEP_GROUP" --pretrain_path="$IQL_CKPT" \
   --agent_flags_json="$ONE_STEP_FLAGS" \
-  --biflow_align_steps=20000 \
-  --save_interval=20000
+  --biflow_align_steps=20000
 ```
 
 Evaluate one LIBERO-Long task with the final IQL checkpoint. Set `EVAL_HDF5`
@@ -214,21 +207,20 @@ export IQL_CKPT="$(find "$EXP_ROOT/fql-orl-torch/$IQL_GROUP" \
 export IQL_FLAGS="$(dirname "$IQL_CKPT")/flags.json"
 python eval_biflow_torch.py \
   --checkpoint="$IQL_CKPT" --flags_json="$IQL_FLAGS" \
-  --env_name=libero_10 --dataset_dir="$EVAL_HDF5" \
+  --dataset_dir="$EVAL_HDF5" \
   --libero_buffer_path="$EVAL_BUFFER" \
   --smolvlm_model_path="$SMOLVLM_MODEL_PATH" \
   --language_model_path="$CLIP_MODEL_PATH" \
   --action_exec_horizon=16 --temperature=0.5 --cfg=0.6 \
   --apply_denoising=false \
-  --output=libero10_iql_eval.csv \
-  --episode_output=libero10_iql_eval.episodes.json
+  --output=libero10_iql_eval.csv
 ```
 
 The same preparation, training, and evaluation commands apply to the other
-official suites. Replace `libero_10` consistently with `libero_spatial`,
-`libero_object`, or `libero_goal`, and point `dataset_dir` and the Zarr buffer
-at that suite's local files. A rollout `dataset_dir` must be one task HDF5;
-training may use a quoted suite glob.
+official suites. Add `--env_name=libero_spatial`, `libero_object`, or
+`libero_goal`, and point `dataset_dir` and the Zarr buffer at that suite's
+local files. A rollout `dataset_dir` must be one task HDF5; training may use a
+quoted suite glob.
 
 ## Release Evaluation
 
@@ -341,11 +333,10 @@ COMMON=(
   --agent.q_agg=mean --agent.discount=0.997 --agent.tau=0.05
   --agent.bc_rep_size=1152 --agent.conditioning_mode=vision_context
   --agent.vlm_fuse=False --agent.use_language_conditioning=False
-  --agent.cfg=0.0 --agent.eval_temperature=0.7
   --agent.alpha_actor=1.0
   --obs_horizon=1 --action_horizon=10 --global_batch_size=64
   --ddp=True --ddp_static_graph=False --ddp_find_unused_parameters=True
-  --log_interval=100 --eval_interval=0
+  --eval_interval=0
 )
 
 torchrun --standalone --nnodes=1 --nproc_per_node=16 \
@@ -377,8 +368,7 @@ export ONE_STEP_FLAGS="$WEIGHTS_ROOT/checkpoints/robomimic_square/one_step/seed0
 torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" --run_group="$ONE_STEP_GROUP" \
   --pretrain_path="$IQL_CKPT" --agent_flags_json="$ONE_STEP_FLAGS" \
-  --biflow_align_steps=20000 \
-  --save_interval=20000
+  --biflow_align_steps=20000
 ```
 
 Evaluate the final RoboMimic IQL checkpoint:
@@ -394,8 +384,7 @@ python eval_biflow_torch.py \
   --robomimic_buffer_path="$ROBOMIMIC_BUFFER" --eval_episodes=100 \
   --action_exec_horizon=10 --temperature=0.7 --cfg=0.0 \
   --apply_denoising=false --fixed_episode_seeds=true \
-  --output=robomimic_square_mh_iql_eval.csv \
-  --episode_output=robomimic_square_mh_iql_eval.episodes.json
+  --output=robomimic_square_mh_iql_eval.csv
 ```
 
 For Lift-MH or Can-MH, replace `square` in the local paths and use

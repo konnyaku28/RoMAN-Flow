@@ -125,6 +125,8 @@ python scripts/prepare_libero_buffer.py \
 
 Run IL on one node with 16 GPUs:
 
+The shared options below list only values that differ from the release defaults.
+
 ```bash
 cd "$CODE_ROOT"
 export EXP_ROOT="$CODE_ROOT/exp"
@@ -134,49 +136,25 @@ COMMON=(
   --env_name=libero_10
   --dataset_dir="$LIBERO10_HDF5"
   --libero_buffer_path="$LIBERO10_BUFFER"
-  --agent=agents/vinf_torch.py
   --seed=1
-  --wandb_dir="$EXP_ROOT"
-  --wandb_mode=offline
   --agent.actor_encoder=impala
-  --agent.critic_encoder=impala
   --agent.impala_adaptive_pool_hw=16,16
   --agent.critic_prefix_reduce=mean
   --agent.q_agg=mean
   --agent.discount=0.995
   --agent.bc_rep_size=1152
-  --agent.bc_channels=1152
-  --agent.bc_num_blocks=6
-  --agent.layers_per_block='(2,2,2,2,2,18)'
-  --agent.num_heads=16
-  --agent.conditioning_mode=context
-  --agent.vlm_fuse=True
-  --agent.use_language_conditioning=True
   --agent.smolvlm_model_path="$SMOLVLM_MODEL_PATH"
   --agent.language_model_path="$CLIP_MODEL_PATH"
-  --agent.vlm_image_size=384
-  --agent.vlm_language_max_length=50
-  --agent.vlm_freeze_steps=1000
-  --agent.vlm_lr_multiplier=0.1
-  --agent.vlm_gradient_checkpointing=True
   --agent.use_proprioception=True
-  --agent.proprio_dim=8
-  --agent.proprio_injection=vlm_context_token
   --agent.critic_use_language_conditioning=True
   --agent.value_use_language_conditioning=True
   --agent.share_critic_value_state=True
-  --agent.data_noise=0.05
   --agent.alpha_actor=1.0
-  --agent.actor_max_grad_norm=1.0
-  --agent.critic_max_grad_norm=1.0
-  --obs_horizon=2
-  --action_horizon=16
   --global_batch_size=64
   --batch_prefetch=True
   --ddp=True
   --ddp_static_graph=False
   --ddp_find_unused_parameters=True
-  --ddp_timeout_seconds=3600
   --log_interval=100
   --eval_interval=0
 )
@@ -185,8 +163,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" \
   --run_group="$RUN_GROUP" \
   --agent.train_mode=il \
-  --agent.lr=5e-5 --agent.actor_lr=5e-5 --agent.critic_lr=5e-5 \
-  --agent.il_train_critic_value=False --agent.use_hubl=False \
+  --agent.lr=5e-5 --agent.actor_lr=5e-5 \
   --offline_steps=20000 --save_interval=20000
 ```
 
@@ -201,12 +178,9 @@ export IQL_GROUP=romanflow_libero10_iql
 torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" \
   --run_group="$IQL_GROUP" --pretrain_path="$IL_CKPT" \
-  --agent.train_mode=iql \
-  --agent.iql_expectile=0.8 --agent.iql_temperature=10.0 \
-  --agent.iql_adv_clip=100.0 --agent.iql_bc_alpha=0.0 \
-  --agent.iql_critic_warmup_steps=1000 \
-  --agent.use_hubl=True --agent.hubl_lambda_type=rank --agent.hubl_alpha=0.2 \
-  --agent.lr=1e-4 --agent.actor_lr=2e-5 --agent.critic_lr=1e-4 \
+  --agent.iql_temperature=10.0 \
+  --agent.use_hubl=True --agent.hubl_alpha=0.2 \
+  --agent.actor_lr=2e-5 \
   --offline_steps=50000 --save_interval=10000
 ```
 
@@ -224,7 +198,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   --run_group="$ONE_STEP_GROUP" --pretrain_path="$IQL_CKPT" \
   --agent_flags_json="$ONE_STEP_FLAGS" \
   --biflow_align_steps=20000 \
-  --offline_steps=20000 --save_interval=20000
+  --save_interval=20000
 ```
 
 Evaluate one LIBERO-Long task with the final IQL checkpoint. Set `EVAL_HDF5`
@@ -238,14 +212,11 @@ export IQL_FLAGS="$(dirname "$IQL_CKPT")/flags.json"
 python eval_biflow_torch.py \
   --checkpoint="$IQL_CKPT" --flags_json="$IQL_FLAGS" \
   --env_name=libero_10 --dataset_dir="$EVAL_HDF5" \
-  --libero_buffer_path="$EVAL_BUFFER" --eval_episodes=50 \
+  --libero_buffer_path="$EVAL_BUFFER" \
   --smolvlm_model_path="$SMOLVLM_MODEL_PATH" \
   --language_model_path="$CLIP_MODEL_PATH" \
-  --obs_horizon=2 --action_horizon=16 --action_exec_horizon=16 \
-  --device=cuda:0 --temperature=0.5 --cfg=0.6 \
-  --sample_backend=simflow --use_biflow=false \
-  --apply_denoising=false --clip_actions=true \
-  --fixed_episode_seeds=true --episode_seed_start=0 \
+  --action_exec_horizon=16 --temperature=0.5 --cfg=0.6 \
+  --apply_denoising=false \
   --output=libero10_iql_eval.csv \
   --episode_output=libero10_iql_eval.episodes.json
 ```
@@ -301,8 +272,7 @@ COMMON_LIBERO_EVAL=(
 )
 
 python scripts/evaluate.py "${COMMON_LIBERO_EVAL[@]}" \
-  --devices=0,1,2,3 \
-  --eval-episodes=10
+  --devices=0,1,2,3
 ```
 
 For a multi-machine run, use the same data, buffer, checkpoint, and output
@@ -310,7 +280,7 @@ paths on every machine, but assign disjoint shards explicitly. After all
 shards complete, create one summary from any machine:
 
 ```bash
-python scripts/evaluate.py "${COMMON_LIBERO_EVAL[@]}" --devices=0,1 --shard-index=0 --shard-count=2
+python scripts/evaluate.py "${COMMON_LIBERO_EVAL[@]}" --devices=0,1 --shard-count=2
 python scripts/evaluate.py "${COMMON_LIBERO_EVAL[@]}" --devices=0,1 --shard-index=1 --shard-count=2
 python scripts/evaluate.py "${COMMON_LIBERO_EVAL[@]}" --summarize-only
 ```
@@ -326,8 +296,7 @@ python scripts/evaluate.py \
   --checkpoint-root="$WEIGHTS_ROOT/checkpoints" \
   --manifest="$WEIGHTS_ROOT/manifest.json" \
   --output-root=/path/to/romanflow_results/robomimic_release \
-  --devices=0,1,2,3 \
-  --eval-episodes=10
+  --devices=0,1,2,3
 ```
 
 RoboMimic defaults to the released IQL and One-Step checkpoints. Add
@@ -351,6 +320,8 @@ already converted `mh/image_v141.hdf5`. No dataset download is performed.
 
 Train IL and then IQL on one node with 16 GPUs:
 
+The shared options below list only values that differ from the release defaults.
+
 ```bash
 cd "$CODE_ROOT"
 export EXP_ROOT="$CODE_ROOT/exp"
@@ -361,47 +332,34 @@ COMMON=(
   --env_name=robomimic_square_mh
   --dataset_dir="$ROBOMIMIC_HDF5"
   --robomimic_buffer_path="$ROBOMIMIC_BUFFER"
-  --agent=agents/vinf_torch.py
-  --seed=0 --wandb_dir="$EXP_ROOT" --wandb_mode=offline
   --agent.actor_encoder=robomimic_spatial_resnet18
   --agent.critic_encoder=robomimic_spatial_resnet18
-  --agent.image_num_views=2
   --agent.critic_prefix_reduce=mean
   --agent.q_agg=mean --agent.discount=0.997 --agent.tau=0.05
-  --agent.bc_rep_size=1152 --agent.bc_channels=1152
-  --agent.bc_num_blocks=6 --agent.layers_per_block='(2,2,2,2,2,18)'
-  --agent.num_heads=16 --agent.conditioning_mode=vision_context
+  --agent.bc_rep_size=1152 --agent.conditioning_mode=vision_context
   --agent.vlm_fuse=False --agent.use_language_conditioning=False
-  --agent.critic_use_language_conditioning=False
-  --agent.value_use_language_conditioning=False
-  --agent.robomimic_use_proprioception=False
-  --agent.robomimic_use_crop_augmentation=False
-  --agent.robomimic_resnet_input_size=224 --agent.cfg=0.0
-  --agent.eval_temperature=0.7 --agent.data_noise=0.05
-  --agent.alpha_actor=1.0 --agent.actor_max_grad_norm=1.0
-  --agent.critic_max_grad_norm=1.0
+  --agent.cfg=0.0 --agent.eval_temperature=0.7
+  --agent.alpha_actor=1.0
   --obs_horizon=1 --action_horizon=10 --global_batch_size=64
   --ddp=True --ddp_static_graph=False --ddp_find_unused_parameters=True
-  --ddp_timeout_seconds=3600 --log_interval=100 --eval_interval=0
+  --log_interval=100 --eval_interval=0
 )
 
 torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" --run_group="$RUN_GROUP" \
-  --agent.train_mode=il --agent.il_train_critic_value=False \
-  --agent.use_hubl=False --agent.lr=1e-4 --agent.actor_lr=1e-4 \
-  --agent.critic_lr=1e-4 --offline_steps=30000 --save_interval=10000
+  --agent.train_mode=il --offline_steps=30000 --save_interval=10000
 
 export IL_CKPT="$(find "$EXP_ROOT/fql-orl-torch/$RUN_GROUP" \
   -name params_30000.pt -print -quit)"
 
 torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" --run_group="$IQL_GROUP" \
-  --pretrain_path="$IL_CKPT" --agent.train_mode=iql \
+  --pretrain_path="$IL_CKPT" \
   --agent.iql_expectile=0.75 --agent.iql_temperature=10.0 \
-  --agent.iql_adv_clip=20.0 --agent.iql_bc_alpha=0.0 \
+  --agent.iql_adv_clip=20.0 \
   --agent.iql_critic_warmup_steps=5000 \
-  --agent.use_hubl=True --agent.hubl_lambda_type=rank --agent.hubl_alpha=0.15 \
-  --agent.lr=2e-4 --agent.actor_lr=2e-4 --agent.critic_lr=2e-4 \
+  --agent.use_hubl=True --agent.hubl_alpha=0.15 \
+  --agent.lr=2e-4 \
   --offline_steps=50000 --save_interval=25000
 ```
 
@@ -417,7 +375,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=16 \
   main_torch.py "${COMMON[@]}" --run_group="$ONE_STEP_GROUP" \
   --pretrain_path="$IQL_CKPT" --agent_flags_json="$ONE_STEP_FLAGS" \
   --biflow_align_steps=20000 \
-  --offline_steps=20000 --save_interval=20000
+  --save_interval=20000
 ```
 
 Evaluate the final RoboMimic IQL checkpoint:
@@ -431,11 +389,8 @@ python eval_biflow_torch.py \
   --checkpoint="$IQL_CKPT" --flags_json="$IQL_FLAGS" \
   --env_name=robomimic_square_mh --dataset_dir="$ROBOMIMIC_HDF5" \
   --robomimic_buffer_path="$ROBOMIMIC_BUFFER" --eval_episodes=100 \
-  --obs_horizon=1 --action_horizon=10 --action_exec_horizon=10 \
-  --device=cuda:0 --temperature=0.7 --cfg=0.0 \
-  --sample_backend=simflow --use_biflow=false \
-  --apply_denoising=false --clip_actions=true \
-  --fixed_episode_seeds=true --episode_seed_start=0 \
+  --action_exec_horizon=10 --temperature=0.7 --cfg=0.0 \
+  --apply_denoising=false --fixed_episode_seeds=true \
   --output=robomimic_square_mh_iql_eval.csv \
   --episode_output=robomimic_square_mh_iql_eval.episodes.json
 ```

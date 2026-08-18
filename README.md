@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/Paper-ArXiv-99cc2)](#)
 [![Models](https://img.shields.io/badge/Models-Huggingface-red?logo=huggingface)](#)
-[![Demo LIBERO](https://img.shields.io/badge/Demo-LIBERO--Long-red?logo=youtube)](videos/libero_long.mp4)
-[![Demo RoboMimic](https://img.shields.io/badge/Demo-RoboMimic-red?logo=youtube)](videos/robomimic_square.mp4)
-[![Demo MetaWorld](https://img.shields.io/badge/Demo-MetaWorld-red?logo=youtube)](videos/metaworld_hand_insert.mp4)
+[![Demo LIBERO](https://img.shields.io/badge/Demo-LIBERO--Long-blue?logo=youtube)](videos/libero_long.mp4)
+[![Demo RoboMimic](https://img.shields.io/badge/Demo-RoboMimic-blue?logo=youtube)](videos/robomimic_square.mp4)
+[![Demo MetaWorld](https://img.shields.io/badge/Demo-MetaWorld-blue?logo=youtube)](videos/metaworld_hand_insert.mp4)
 
 </div>
 

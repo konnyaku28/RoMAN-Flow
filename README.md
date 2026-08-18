@@ -1,16 +1,19 @@
 # RoMAN-Flow
 
+<div align="center">
+
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Paper](https://img.shields.io/badge/Paper-ArXiv-99cc2)](#)
+[![Models](https://img.shields.io/badge/Models-Huggingface-red?logo=huggingface)](#)
+[![Demo LIBERO](https://img.shields.io/badge/Demo-LIBERO--Long-red?logo=youtube)](videos/libero_long.mp4)
+[![Demo RoboMimic](https://img.shields.io/badge/Demo-RoboMimic-red?logo=youtube)](videos/robomimic_square.mp4)
+[![Demo MetaWorld](https://img.shields.io/badge/Demo-MetaWorld-red?logo=youtube)](videos/metaworld_hand_insert.mp4)
+
+</div>
+
 ## Overview
 
 ![RoMAN-Flow overview](RoMAN-FLOW-overview.jpg)
-
-## Rollout Videos
-
-Representative successful rollouts are included as repository-local MP4 files:
-
-- [libero_long](videos/libero_long.mp4)
-- [robomimic](videos/robomimic_square.mp4)
-- [metaworld](videos/metaworld_hand_insert.mp4)
 
 ## Environment
 

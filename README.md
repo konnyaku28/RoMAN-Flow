@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/Paper-ArXiv-99cc2)](#)
-[![Models](https://img.shields.io/badge/Models-Huggingface-red?logo=huggingface)](#)
+[![Models](https://img.shields.io/badge/Models-Huggingface-red?logo=huggingface)](https://huggingface.co/wangshaoxuan/RoMAN-Flow)
 
 </div>
 

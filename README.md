@@ -3,7 +3,7 @@
 <div align="center">
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Paper](https://img.shields.io/badge/Paper-ArXiv-99cc2)](#)
+[![Paper](https://img.shields.io/badge/Paper-ArXiv-99cc2)](https://arxiv.org/abs/2608.20208)
 [![Models](https://img.shields.io/badge/Models-Huggingface-red?logo=huggingface)](https://huggingface.co/wangshaoxuan/RoMAN-Flow)
 
 </div>
